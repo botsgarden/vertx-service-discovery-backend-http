@@ -54,8 +54,6 @@ public class HttpBackendService implements ServiceDiscoveryBackend {
   @Override
   public void store(Record record, Handler<AsyncResult<Record>> resultHandler) {
     
-    System.out.println(record.toJson().toString());
-
     if (record.getRegistration() != null) {
       resultHandler.handle(Future.failedFuture("The record has already been registered"));
       return;
@@ -63,39 +61,36 @@ public class HttpBackendService implements ServiceDiscoveryBackend {
     String uuid = UUID.randomUUID().toString();
     record.setRegistration(uuid);
 
-    System.out.println(uuid);
-
-
-    System.out.println("POST: " + this.httpBackendPort + " " + this.httpBackendHost + " " + this.registerUri);
-
     client.post(this.httpBackendPort, this.httpBackendHost, this.registerUri)
       .sendJsonObject(record.toJson(), ar -> {
-        System.out.println("Hey Oh!!!");
         if (ar.succeeded()) {
-          System.out.println("succeeded");
           resultHandler.handle(Future.succeededFuture(record));
         } else {
-          System.out.println("not succeeded");
           resultHandler.handle(Future.failedFuture(ar.cause()));
         }
       });
-
   }
 
   @Override
   public void remove(Record record, Handler<AsyncResult<Record>> resultHandler) {
+    System.out.println("remove");
     Objects.requireNonNull(record.getRegistration(), "No registration id in the record");
     remove(record.getRegistration(), resultHandler);
   }
 
   @Override
   public void remove(String uuid, Handler<AsyncResult<Record>> resultHandler) {
+    System.out.println("remove..."+uuid);
     Objects.requireNonNull(uuid, "No registration id in the record");
+
+    System.out.println("send delete request..."+uuid);
 
     client.delete(this.httpBackendPort, this.httpBackendHost, this.removeUri + "/" + uuid)
       .send(ar -> {
         if (ar.succeeded()) {
-          resultHandler.handle(Future.succeededFuture());
+          resultHandler.handle(Future.succeededFuture(
+            new Record(new JsonObject().put("registration",uuid))
+          ));
         } else {
           resultHandler.handle(Future.failedFuture(ar.cause()));
         }
@@ -142,7 +137,7 @@ public class HttpBackendService implements ServiceDiscoveryBackend {
 
   @Override
   public void getRecord(String uuid, Handler<AsyncResult<Record>> resultHandler) {
-    // foo...
+    // TODO
   }
 
 }
